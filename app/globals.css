@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 260 5% 15%;
+    --foreground: 260 5% 95%;
+    --card: 260 5% 15%;
+    --card-foreground: 260 5% 95%;
+    --popover: 260 5% 12%;
+    --popover-foreground: 260 5% 95%;
+    --primary: 260 80% 70%;
+    --primary-foreground: 260 5% 15%;
+    --secondary: 260 10% 25%;
+    --secondary-foreground: 260 5% 95%;
+    --muted: 260 10% 25%;
+    --muted-foreground: 260 5% 65%;
+    --accent: 260 80% 60%;
+    --accent-foreground: 260 5% 10%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 260 10% 30%;
+    --input: 260 10% 30%;
+    --ring: 260 80% 75%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 260 5% 15%;
+    --foreground: 260 5% 95%;
+    --card: 260 5% 15%;
+    --card-foreground: 260 5% 95%;
+    --popover: 260 5% 12%;
+    --popover-foreground: 260 5% 95%;
+    --primary: 260 80% 70%;
+    --primary-foreground: 260 5% 15%;
+    --secondary: 260 10% 25%;
+    --secondary-foreground: 260 5% 95%;
+    --muted: 260 10% 25%;
+    --muted-foreground: 260 5% 65%;
+    --accent: 260 80% 60%;
+    --accent-foreground: 260 5% 10%;
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 260 10% 30%;
+    --input: 260 10% 30%;
+    --ring: 260 80% 75%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@keyframes flash {
+  0%, 100% {
+    background-color: hsl(var(--accent) / 0.3);
+    transform: scale(1);
+    box-shadow: 0 0 0 2px hsl(var(--accent) / 0.5);
+  }
+  50% {
+    background-color: hsl(var(--accent) / 0.5);
+    transform: scale(1.05);
+    box-shadow: 0 0 0 4px hsl(var(--accent) / 0.3);
+  }
+}
+
+.animate-flash {
+  animation: flash 1.5s ease-in-out;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: hsl(var(--primary) / 0.5);
+    transform: scale(1);
+  }
+  50% {
+    border-color: hsl(var(--primary) / 1);
+    transform: scale(1.01);
+  }
+}
+
+.animate-pulse-border {
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+/* Hide the default clear (x) button in search inputs and remove native appearance */
+input[type="search"] {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+input[type="search"]::-webkit-search-clear-button {
+  display: none;
+}
+input[type="search"]::-ms-clear {
+  display: none;
+}
+input[type="search"]::-moz-search-clear-button {
+  display: none;
+}
+input[type="search"]::-o-clear {
+  display: none;
+}
