@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { cn } from '@/lib/utils';
 import translations from '../translations/pt.json';
 import { useRef } from 'react';
+import { ModeToggle } from './mode-toggle';
 
 type HeaderProps = {
   searchQuery: string;
@@ -106,6 +107,7 @@ export default function Header({
             </div>
           </div>
           <div className="flex items-center gap-1" >
+            <ModeToggle />
             <div id="more-options" className={cn('relative rounded-full transition-all duration-300', {'ring-2 ring-primary ring-offset-2 ring-offset-background': tutorialHighlight === 'more-options'})}>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
