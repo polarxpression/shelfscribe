@@ -53,7 +53,7 @@ export default function ImportButton({ onImport, onError }: ImportButtonProps) {
       />
       <Button onClick={handleClick} variant="outline" size="icon">
         <Upload className="h-5 w-5" />
-        <span className="sr-only">{translations.import_json}</span>
+        <span className="sr-only">{translations.import_json_button}</span>
       </Button>
     </>
   );
