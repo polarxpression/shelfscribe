@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Upload } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useRef } from 'react';
 import translations from '../translations/pt.json';
@@ -52,8 +52,8 @@ export default function ImportButton({ onImport, onError }: ImportButtonProps) {
         accept="application/json"
       />
       <Button onClick={handleClick} variant="outline" size="icon">
-        <Upload className="h-5 w-5" />
-        <span className="sr-only">{translations.import_json_button}</span>
+        <Download className="h-5 w-5" />
+        {translations.import_json_button}
       </Button>
     </>
   );

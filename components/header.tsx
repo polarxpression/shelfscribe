@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, BookMarked, Github, MoreVertical, FileQuestion, Upload } from 'lucide-react';
+import { Search, BookMarked, Github, MoreVertical, FileQuestion, Upload, Download} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -118,8 +118,7 @@ export default function Header({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={handleImportClick}>
-                    <Upload className="mr-2 h-4 w-4" />
-                    <span>{translations.import_json_button}</span>
+                    <Download />{translations.import_json_button}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => alert("Exporting not implemented yet!")}>
                     <Upload /> {translations.export_json_button}
