@@ -59,7 +59,5 @@
   "import_success_description": "Os dados da prateleira foram atualizados.",
   "import_error_title": "Erro na importação",
   "import_error_invalid_json": "O arquivo selecionado não é um JSON válido.",
-  "import_error_reading_file": "Falha ao ler o arquivo.",
-  "expand_columns": "Expandir colunas",
-  "expand_rows": "Expandir linhas"
+  "import_error_reading_file": "Falha ao ler o arquivo."
 }

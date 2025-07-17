@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Header from '@/components/header';
 import ShelfGrid from '@/components/shelf-grid';
 import EditCellDialog from '@/components/edit-cell-dialog';
@@ -24,11 +24,11 @@ export default function Home() {
   const [searchResult, setSearchResult] = useState<string | null>(null);
   const [selectedCell, setSelectedCell] = useState<string | null>(null);
   const [lastUpdatedCell, setLastUpdatedCell] = useState<string | null>(null);
+  const [lastDeletedCell, setLastDeletedCell] = useState<string | null>(null);
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialHighlight, setTutorialHighlight] = useState<string | null>(null);
   const { toast } = useToast();
-  const [numCols, setNumCols] = useState(15);
-  const [numRows, setNumRows] = useState(5);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const tutorialSteps = [
     {
@@ -68,34 +68,17 @@ export default function Home() {
     try {
       const storedData = localStorage.getItem('shelfData');
       if (storedData) {
-        // Migrate old data: convert string values to arrays
         const parsed = JSON.parse(storedData);
         const migrated: ShelfData = Object.fromEntries(
           Object.entries(parsed).map(([key, value]) =>
             Array.isArray(value)
               ? [key, value]
-              : [key, [{ barcode: value }]]
+              : [key, [{ barcode: value as string }]]
           )
         );
         setShelfData(migrated);
-
-        let maxCol = 0;
-        let maxRow = 0;
-        for (const cellId in migrated) {
-          const [col, row] = cellId.split('-').map(Number);
-          if (col > maxCol) maxCol = col;
-          if (row > maxRow) maxRow = row;
-        }
-
-        setNumCols(prev => Math.max(prev, maxCol));
-        setNumRows(prev => Math.max(prev, maxRow));
       } else {
-        const exampleData: ShelfData = {
-          '1-1': [{ barcode: '9780321765723' }],
-          '3-2': [{ barcode: '9780132350884' }],
-          '5-4': [{ barcode: '9780262033848' }],
-        };
-        setShelfData(exampleData);
+        setShelfData({ '1-1': [] });
         setShowTutorial(true);
       }
     } catch (error) {
@@ -113,6 +96,14 @@ export default function Home() {
     if (isLoaded) {
       try {
         localStorage.setItem('shelfData', JSON.stringify(shelfData));
+        if (scrollContainerRef.current) {
+          const { scrollWidth, clientWidth, scrollHeight, clientHeight } = scrollContainerRef.current;
+          scrollContainerRef.current.scrollTo({
+            left: (scrollWidth - clientWidth) / 2,
+            top: (scrollHeight - clientHeight) / 2,
+            behavior: 'smooth',
+          });
+        }
       } catch (error) {
         console.error('Failed to save data to localStorage', error);
         toast({
@@ -160,11 +151,15 @@ export default function Home() {
   };
 
   const handleDelete = (cellId: string) => {
-    setShelfData(prevData => {
-      const newData = { ...prevData };
-      delete newData[cellId];
-      return newData;
-    });
+    setLastDeletedCell(cellId);
+    setTimeout(() => {
+      setShelfData(prevData => {
+        const newData = { ...prevData };
+        delete newData[cellId];
+        return newData;
+      });
+      setLastDeletedCell(null);
+    }, 300);
     handleCloseDialog();
   };
   
@@ -178,7 +173,6 @@ export default function Home() {
   };
 
   const handleImport = (data: ShelfData) => {
-    // Basic validation: check if data is an object
     if (typeof data !== 'object' || data === null) {
       toast({
         title: translations.import_error_title,
@@ -187,29 +181,11 @@ export default function Home() {
       });
       return;
     }
-    let maxCol = 0;
-    let maxRow = 0;
-    for (const cellId in data) {
-      const [col, row] = cellId.split('-').map(Number);
-      if (col > maxCol) maxCol = col;
-      if (row > maxRow) maxRow = row;
-    }
-
-    setNumCols(prev => Math.max(prev, maxCol));
-    setNumRows(prev => Math.max(prev, maxRow));
     setShelfData(data);
     toast({
       title: translations.import_success_title,
       description: translations.import_success_description,
     });
-  };
-
-  const handleExpandCols = () => {
-    setNumCols(prev => prev + 1);
-  };
-
-  const handleExpandRows = () => {
-    setNumRows(prev => prev + 1);
   };
 
   const handleImportError = (message: string) => {
@@ -238,17 +214,14 @@ export default function Home() {
               <CardTitle className="pointer-events-none select-none text-xl font-bold tracking-tight text-primary">{translations.my_notebook_shelf_title}</CardTitle>
               <CardDescription className="pointer-events-none select-none">{translations.shelf_description}</CardDescription>
             </CardHeader>
-            <CardContent className="flex-grow flex items-center justify-center">
+            <CardContent ref={scrollContainerRef} className="flex-grow flex items-center justify-center overflow-auto p-4">
               {isLoaded ? (
                 <ShelfGrid
-                  numCols={numCols}
-                  numRows={numRows}
-                  onExpandCols={handleExpandCols}
-                  onExpandRows={handleExpandRows}
                   shelfData={shelfData}
                   onCellClick={handleCellClick}
                   searchResult={searchResult}
                   lastUpdatedCell={lastUpdatedCell}
+                  lastDeletedCell={lastDeletedCell}
                   tutorialHighlight={tutorialHighlight}
                 />
               ) : (

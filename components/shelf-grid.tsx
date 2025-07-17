@@ -1,51 +1,92 @@
 'use client';
 
-import { Book, Plus, ChevronsRight, ChevronsDown } from 'lucide-react';
+import { Book, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import type { Notebook } from '@/app/page';
+import type { Notebook, ShelfData } from '@/app/page';
 import translations from '../translations/pt.json';
+import { useEffect, useState } from 'react';
 
 export type ShelfGridProps = {
-  numCols: number;
-  numRows: number;
-  shelfData: { [key: string]: Notebook[] };
+  shelfData: ShelfData;
   onCellClick: (cellId: string) => void;
-  onExpandCols: () => void;
-  onExpandRows: () => void;
   searchResult: string | null;
   lastUpdatedCell: string | null;
+  lastDeletedCell: string | null;
   tutorialHighlight: string | null;
 };
 
 export default function ShelfGrid({
-  numCols,
-  numRows,
   shelfData,
   onCellClick,
-  onExpandCols,
-  onExpandRows,
   searchResult,
   lastUpdatedCell,
+  lastDeletedCell,
   tutorialHighlight
 }: ShelfGridProps) {
-  const columns = Array.from({ length: numCols }, (_, i) => i + 1);
-  const rows = Array.from({ length: numRows }, (_, i) => i + 1);
+  const [renderedCells, setRenderedCells] = useState<Set<string>>(new Set());
+
+  const occupiedCells = Object.keys(shelfData).filter(key => shelfData[key].length > 0);
+
+  const { maxCol, maxRow } = occupiedCells.reduce(
+    (acc, cellId) => {
+      const [col, row] = cellId.split('-').map(Number);
+      return {
+        maxCol: Math.max(acc.maxCol, col),
+        maxRow: Math.max(acc.maxRow, row),
+      };
+    },
+    { maxCol: 1, maxRow: 1 }
+  );
+
+  const gridCols = maxCol + 1;
+  const gridRows = maxRow + 1;
+
+  useEffect(() => {
+    const newCells = new Set<string>();
+    for (let c = 1; c <= gridCols; c++) {
+      for (let r = 1; r <= gridRows; r++) {
+        const cellId = `${c}-${r}`;
+        const hasContent = shelfData[cellId] && shelfData[cellId].length > 0;
+        const isAdjacent = 
+          (shelfData[`${c-1}-${r}`] && shelfData[`${c-1}-${r}`].length > 0) ||
+          (shelfData[`${c+1}-${r}`] && shelfData[`${c+1}-${r}`].length > 0) ||
+          (shelfData[`${c}-${r-1}`] && shelfData[`${c}-${r-1}`].length > 0) ||
+          (shelfData[`${c}-${r+1}`] && shelfData[`${c}-${r+1}`].length > 0);
+
+        if (hasContent || isAdjacent || (c === 1 && r === 1)) {
+          newCells.add(cellId);
+        }
+      }
+    }
+    setRenderedCells(newCells);
+  }, [shelfData, gridCols, gridRows]);
 
   return (
     <TooltipProvider delayDuration={100}>
-      <div className="flex items-start gap-1.5">
-        <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${numCols}, minmax(0, 1fr))` }}>
-          {/* Grid Cells */}
-          {columns.map(col => (
+      <div className="w-full flex justify-center">
+        <div 
+          className="grid gap-1.5"
+          style={{
+            gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
+            transition: 'grid-template-columns 0.5s ease-in-out',
+          }}
+        >
+          {Array.from({ length: gridCols }, (_, i) => i + 1).map(col => (
             <div key={`col-content-${col}`} className="flex flex-col gap-1.5">
-              {rows.map(row => {
+              {Array.from({ length: gridRows }, (_, i) => i + 1).map(row => {
                 const cellId = `${col}-${row}`;
-                let notebooks = shelfData[cellId] || [];
+                if (!renderedCells.has(cellId) && lastDeletedCell !== cellId) {
+                  return <div key={cellId} className="h-16 w-16" />;
+                }
+
+                const notebooks = shelfData[cellId] || [];
                 const isSearchResult = cellId === searchResult;
                 const isLastUpdated = cellId === lastUpdatedCell;
                 const isTutorialHighlight = tutorialHighlight === `cell-${cellId}`;
+                const isNew = !occupiedCells.includes(cellId) && renderedCells.has(cellId);
+                const isDisappearing = cellId === lastDeletedCell;
 
                 return (
                   <Tooltip key={cellId}>
@@ -61,7 +102,9 @@ export default function ShelfGrid({
                           notebooks.length > 0 ? 'bg-primary/10 border-primary/30 text-primary' : 'border-dashed border-border/80 text-muted-foreground hover:text-primary',
                           isSearchResult && 'ring-2 ring-offset-2 ring-offset-background ring-accent animate-pulse',
                           isLastUpdated && 'animate-flash',
-                          isTutorialHighlight && 'ring-2 ring-offset-2 ring-offset-background ring-primary animate-pulse'
+                          isTutorialHighlight && 'ring-2 ring-offset-2 ring-offset-background ring-primary animate-pulse',
+                          isNew && 'animate-cell-appear',
+                          isDisappearing && 'animate-cell-disappear'
                         )}
                       >
                         <div className="flex flex-wrap items-center justify-center w-full h-full gap-0.5 overflow-hidden">
@@ -98,31 +141,6 @@ export default function ShelfGrid({
             </div>
           ))}
         </div>
-        {/* Expand Buttons */}
-        <div className="flex flex-col gap-1.5" style={{ height: `calc(${numRows} * (4rem + 0.375rem))` }}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button onClick={onExpandCols} variant="outline" size="icon" className="h-16 w-16 border-dashed text-muted-foreground">
-                <ChevronsRight className="h-6 w-6" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{translations.expand_columns}</p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
-      </div>
-      <div className="flex justify-center items-start gap-1.5 mt-1.5" style={{ width: `calc(${numCols} * (4rem + 0.375rem))` }}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button onClick={onExpandRows} variant="outline" size="icon" className="h-16 w-16 border-dashed text-muted-foreground">
-              <ChevronsDown className="h-6 w-6" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{translations.expand_rows}</p>
-          </TooltipContent>
-        </Tooltip>
       </div>
     </TooltipProvider>
   );
