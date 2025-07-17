@@ -15,6 +15,7 @@ export type ShelfGridProps = {
   lastUpdatedCell: string | null;
   lastDeletedCell: string | null;
   tutorialHighlight: string | null;
+  onImport: (data: any, merge: boolean) => void;
 };
 
 export default function ShelfGrid({

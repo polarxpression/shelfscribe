@@ -172,7 +172,7 @@ export default function Home() {
     }
   };
 
-  const handleImport = (data: ShelfData) => {
+  const handleImport = (data: ShelfData, merge: boolean) => {
     if (typeof data !== 'object' || data === null) {
       toast({
         title: translations.import_error_title,
@@ -181,11 +181,33 @@ export default function Home() {
       });
       return;
     }
-    setShelfData(data);
-    toast({
-      title: translations.import_success_title,
-      description: translations.import_success_description,
-    });
+
+    if (merge) {
+      setShelfData(prevData => {
+        const newData = { ...prevData };
+        for (const cellId in data) {
+          if (newData[cellId]) {
+            // Merge notebooks within the same cell, avoiding duplicates
+            const existingBarcodes = new Set(newData[cellId].map(nb => nb.barcode));
+            const newNotebooks = data[cellId].filter(nb => !existingBarcodes.has(nb.barcode));
+            newData[cellId] = [...newData[cellId], ...newNotebooks];
+          } else {
+            newData[cellId] = data[cellId];
+          }
+        }
+        return newData;
+      });
+      toast({
+        title: translations.import_success_title,
+        description: translations.import_success_description + " (Mesclado)",
+      });
+    } else {
+      setShelfData(data);
+      toast({
+        title: translations.import_success_title,
+        description: translations.import_success_description + " (Substituído)",
+      });
+    }
   };
 
   const handleImportError = (message: string) => {
