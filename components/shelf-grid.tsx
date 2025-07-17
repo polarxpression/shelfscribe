@@ -1,6 +1,6 @@
 'use client';
 
-import { Book, Plus } from 'lucide-react';
+import { Book, Plus, ChevronsRight, ChevronsDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -8,36 +8,39 @@ import type { Notebook } from '@/app/page';
 import translations from '../translations/pt.json';
 
 export type ShelfGridProps = {
+  numCols: number;
+  numRows: number;
   shelfData: { [key: string]: Notebook[] };
   onCellClick: (cellId: string) => void;
+  onExpandCols: () => void;
+  onExpandRows: () => void;
   searchResult: string | null;
   lastUpdatedCell: string | null;
   tutorialHighlight: string | null;
 };
 
-const getRowsForColumn = (col: number): number => {
-  if (col === 8) return 1;
-  if (col >= 3 && col <= 7) return 4;
-  return 5;
-};
-
-const columns = Array.from({ length: 15 }, (_, i) => i + 1);
-
 export default function ShelfGrid({
+  numCols,
+  numRows,
   shelfData,
   onCellClick,
+  onExpandCols,
+  onExpandRows,
   searchResult,
   lastUpdatedCell,
   tutorialHighlight
 }: ShelfGridProps) {
+  const columns = Array.from({ length: numCols }, (_, i) => i + 1);
+  const rows = Array.from({ length: numRows }, (_, i) => i + 1);
+
   return (
     <TooltipProvider delayDuration={100}>
-      <div className="w-full flex justify-center">
-        <div className="grid gap-1.5" style={{ gridTemplateColumns: 'repeat(15, minmax(0, 1fr))' }}>
+      <div className="flex items-start gap-1.5">
+        <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${numCols}, minmax(0, 1fr))` }}>
           {/* Grid Cells */}
           {columns.map(col => (
-            <div key={`col-content-${col}`} className="flex flex-col gap-1.5 ">
-              {Array.from({ length: getRowsForColumn(col) }, (_, i) => i + 1).map(row => {
+            <div key={`col-content-${col}`} className="flex flex-col gap-1.5">
+              {rows.map(row => {
                 const cellId = `${col}-${row}`;
                 let notebooks = shelfData[cellId] || [];
                 const isSearchResult = cellId === searchResult;
@@ -95,6 +98,31 @@ export default function ShelfGrid({
             </div>
           ))}
         </div>
+        {/* Expand Buttons */}
+        <div className="flex flex-col gap-1.5" style={{ height: `calc(${numRows} * (4rem + 0.375rem))` }}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button onClick={onExpandCols} variant="outline" size="icon" className="h-16 w-16 border-dashed text-muted-foreground">
+                <ChevronsRight className="h-6 w-6" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{translations.expand_columns}</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+      </div>
+      <div className="flex justify-center items-start gap-1.5 mt-1.5" style={{ width: `calc(${numCols} * (4rem + 0.375rem))` }}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button onClick={onExpandRows} variant="outline" size="icon" className="h-16 w-16 border-dashed text-muted-foreground">
+              <ChevronsDown className="h-6 w-6" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{translations.expand_rows}</p>
+          </TooltipContent>
+        </Tooltip>
       </div>
     </TooltipProvider>
   );

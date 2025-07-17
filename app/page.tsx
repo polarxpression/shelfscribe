@@ -27,6 +27,8 @@ export default function Home() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialHighlight, setTutorialHighlight] = useState<string | null>(null);
   const { toast } = useToast();
+  const [numCols, setNumCols] = useState(15);
+  const [numRows, setNumRows] = useState(5);
 
   const tutorialSteps = [
     {
@@ -76,6 +78,17 @@ export default function Home() {
           )
         );
         setShelfData(migrated);
+
+        let maxCol = 0;
+        let maxRow = 0;
+        for (const cellId in migrated) {
+          const [col, row] = cellId.split('-').map(Number);
+          if (col > maxCol) maxCol = col;
+          if (row > maxRow) maxRow = row;
+        }
+
+        setNumCols(prev => Math.max(prev, maxCol));
+        setNumRows(prev => Math.max(prev, maxRow));
       } else {
         const exampleData: ShelfData = {
           '1-1': [{ barcode: '9780321765723' }],
@@ -174,12 +187,29 @@ export default function Home() {
       });
       return;
     }
-    // More specific validation can be added here if needed
+    let maxCol = 0;
+    let maxRow = 0;
+    for (const cellId in data) {
+      const [col, row] = cellId.split('-').map(Number);
+      if (col > maxCol) maxCol = col;
+      if (row > maxRow) maxRow = row;
+    }
+
+    setNumCols(prev => Math.max(prev, maxCol));
+    setNumRows(prev => Math.max(prev, maxRow));
     setShelfData(data);
     toast({
       title: translations.import_success_title,
       description: translations.import_success_description,
     });
+  };
+
+  const handleExpandCols = () => {
+    setNumCols(prev => prev + 1);
+  };
+
+  const handleExpandRows = () => {
+    setNumRows(prev => prev + 1);
   };
 
   const handleImportError = (message: string) => {
@@ -211,6 +241,10 @@ export default function Home() {
             <CardContent className="flex-grow flex items-center justify-center">
               {isLoaded ? (
                 <ShelfGrid
+                  numCols={numCols}
+                  numRows={numRows}
+                  onExpandCols={handleExpandCols}
+                  onExpandRows={handleExpandRows}
                   shelfData={shelfData}
                   onCellClick={handleCellClick}
                   searchResult={searchResult}
