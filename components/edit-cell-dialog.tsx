@@ -12,7 +12,9 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Barcode, Trash2 } from 'lucide-react';
+import { Barcode, Trash2, Move } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import MoveNotebooksDialog from './move-notebooks-dialog';
 import translations from '../translations/pt.json';
 
 type Notebook = {
@@ -27,6 +29,7 @@ type EditCellDialogProps = {
   onSave: (cellId: string, notebooks: Notebook[]) => void;
   onDelete: (cellId: string) => void;
   onClose: () => void;
+  onMove: (sourceCellId: string, targetCellId: string, notebooksToMove: Notebook[]) => void;
 };
 
 export default function EditCellDialog({
@@ -36,8 +39,11 @@ export default function EditCellDialog({
   onSave,
   onDelete,
   onClose,
-}: EditCellDialogProps) {
+  onMove
+}: EditCellDialogProps) => {
   const [notebooks, setNotebooks] = useState<Notebook[]>(currentNotebooks);
+  const [selectedNotebooks, setSelectedNotebooks] = useState<Set<string>>(new Set());
+  const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
 
   const [col, row] = cellId.split('-');
 
@@ -62,6 +68,37 @@ export default function EditCellDialog({
     setNotebooks(nbs => nbs.filter((_, i) => i !== idx));
   };
 
+  const handleToggleSelect = (barcode: string) => {
+    setSelectedNotebooks(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(barcode)) {
+        newSet.delete(barcode);
+      } else {
+        newSet.add(barcode);
+      }
+      return newSet;
+    });
+  };
+
+  const handleDeleteSelected = () => {
+    const remainingNotebooks = notebooks.filter(nb => !selectedNotebooks.has(nb.barcode));
+    setNotebooks(remainingNotebooks);
+    setSelectedNotebooks(new Set());
+  };
+
+  const handleMoveRequest = () => {
+    setIsMoveDialogOpen(true);
+  };
+
+  const handleConfirmMove = (targetCellId: string) => {
+    const notebooksToMove = notebooks.filter(nb => selectedNotebooks.has(nb.barcode));
+    const remainingNotebooks = notebooks.filter(nb => !selectedNotebooks.has(nb.barcode));
+    onMove(cellId, targetCellId, notebooksToMove);
+    setNotebooks(remainingNotebooks);
+    setSelectedNotebooks(new Set());
+    setIsMoveDialogOpen(false);
+  };
+
   const hasEmptyBarcode = notebooks.some(nb => !nb.barcode || nb.barcode.trim() === '');
 
   return (
@@ -78,11 +115,17 @@ export default function EditCellDialog({
             const isEmpty = !nb.barcode || nb.barcode.trim() === '';
             return (
               <div className="relative flex items-center gap-2" key={idx}>
-                <Label htmlFor={`barcode-${idx}`} className="absolute -top-2 left-2 inline-block bg-background px-1 text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <Checkbox
+                  id={`select-nb-${idx}`}
+                  checked={selectedNotebooks.has(nb.barcode)}
+                  onCheckedChange={() => handleToggleSelect(nb.barcode)}
+                  className="mr-2"
+                />
+                <Label htmlFor={`barcode-${idx}`} className="absolute -top-2 left-10 inline-block bg-background px-1 text-xs font-medium text-muted-foreground flex items-center gap-1">
                   {translations.barcode_label} #{idx + 1}
                   <span className={`transition-all ${isEmpty ? 'text-destructive font-normal' : 'hidden'}`}>({translations.required || 'required'})</span>
                 </Label>
-                <Barcode className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Barcode className="absolute left-11 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   id={`barcode-${idx}`}
                   value={nb.barcode}
@@ -103,11 +146,27 @@ export default function EditCellDialog({
           </Button>
         </div>
         <DialogFooter className="sm:justify-between gap-2">
+          <div>
+            <Button type="button" variant="outline" onClick={handleMoveRequest} disabled={selectedNotebooks.size === 0}>
+              <Move className="mr-2 h-4 w-4" />
+              {translations.move_button}
+            </Button>
+            <Button type="button" variant="destructive" onClick={handleDeleteSelected} disabled={selectedNotebooks.size === 0} className="ml-2">
+              <Trash2 className="mr-2 h-4 w-4" />
+              {translations.delete_selected_button}
+            </Button>
+          </div>
           <Button type="button" onClick={handleSave} disabled={hasEmptyBarcode}>
             {translations.save_changes_button}
           </Button>
         </DialogFooter>
       </DialogContent>
+      <MoveNotebooksDialog
+        isOpen={isMoveDialogOpen}
+        onClose={() => setIsMoveDialogOpen(false)}
+        onMove={handleConfirmMove}
+        currentCellId={cellId}
+      />
     </Dialog>
   );
 }

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import translations from '../translations/pt.json';
 import { useToast } from '@/hooks/use-toast';
 import Tutorial from '@/components/tutorial';
+import ResetDialog from '@/components/reset-dialog';
 import { cn } from '@/lib/utils';
 
 export type Notebook = {
@@ -26,6 +27,7 @@ export default function Home() {
   const [lastUpdatedCell, setLastUpdatedCell] = useState<string | null>(null);
   const [lastDeletedCell, setLastDeletedCell] = useState<string | null>(null);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
   const [tutorialHighlight, setTutorialHighlight] = useState<string | null>(null);
   const { toast } = useToast();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -162,6 +164,38 @@ export default function Home() {
     }, 300);
     handleCloseDialog();
   };
+
+  const handleMoveNotebooks = (sourceCellId: string, targetCellId: string, notebooksToMove: Notebook[]) => {
+    setShelfData(prevData => {
+      const newData = { ...prevData };
+      // Remove from source
+      newData[sourceCellId] = (newData[sourceCellId] || []).filter(nb => 
+        !notebooksToMove.some(movingNb => movingNb.barcode === nb.barcode)
+      );
+      // Add to target
+      newData[targetCellId] = [...(newData[targetCellId] || []), ...notebooksToMove];
+      return newData;
+    });
+    flashUpdate(targetCellId);
+    if (shelfData[sourceCellId]?.length === notebooksToMove.length) {
+      flashUpdate(sourceCellId);
+    } else {
+      flashUpdate(sourceCellId);
+    }
+  };
+
+  const handleReset = () => {
+    setShowResetDialog(true);
+  };
+
+  const handleConfirmReset = () => {
+    setShelfData({ '1-1': [] });
+    setShowResetDialog(false);
+    toast({
+      title: translations.reset_success_title,
+      description: translations.reset_success_description,
+    });
+  };
   
   const handleTutorialStepChange = (step: any) => {
     setTutorialHighlight(step.highlightId || null);
@@ -228,6 +262,7 @@ export default function Home() {
           tutorialHighlight={tutorialHighlight}
           onImport={handleImport}
           onImportError={handleImportError}
+          onReset={() => setShowResetDialog(true)}
         />
         <main className="flex-grow container mx-auto p-4 flex flex-col">
           <Card id="shelf-grid-card" className="w-full shadow-lg border-primary/20 flex-grow flex flex-col relative">
@@ -262,9 +297,15 @@ export default function Home() {
             currentNotebooks={shelfData[selectedCell] || []}
             onSave={handleSave}
             onDelete={handleDelete}
-            onClose={handleCloseDialog}
-          />
+    onClose={handleCloseDialog}
+    onMove={handleMoveNotebooks}
+  />
         )}
+      <ResetDialog
+        isOpen={showResetDialog}
+        onClose={() => setShowResetDialog(false)}
+        onConfirm={handleConfirmReset}
+      />
       </div>
       <Tutorial 
         isOpen={showTutorial} 

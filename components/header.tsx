@@ -1,6 +1,6 @@
 'use client';
 
-import { Search, BookMarked, Github, MoreVertical, FileQuestion, Upload } from 'lucide-react';
+import { Search, BookMarked, Github, MoreVertical, FileQuestion, Upload, HelpCircle, RotateCcw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -16,6 +16,7 @@ type HeaderProps = {
   tutorialHighlight: string | null;
   onImport: (data: any, merge: boolean) => void;
   onImportError: (message: string) => void;
+  onReset: () => void;
 };
 
 export default function Header({
@@ -25,7 +26,8 @@ export default function Header({
   tutorialHighlight,
   onImport,
   onImportError,
-}: HeaderProps) {
+  onReset
+}: HeaderProps) => {
   return (
     <header className="bg-background/80 backdrop-blur-sm border-b shadow-sm sticky top-0 z-50 select-none">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -74,19 +76,14 @@ export default function Header({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <ImportButton onImport={onImport} onError={onImportError} />
+                  <ImportButton onImport={onImport} onImportError={onImportError} />
+                  <DropdownMenuItem onSelect={onShowTutorial}>
+                    <HelpCircle className="mr-2 h-4 w-4" />
+                    <span>{translations.tutorial_button}</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => alert("Exporting not implemented yet!")}>
-                    <Upload /> {translations.export_json_button}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={onShowTutorial}>
-                    <FileQuestion /> {translations.view_tutorial_button as string}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <a href="https://github.com/firebase/studio" target="_blank" rel="noopener noreferrer">
-                      <Github /> {translations.github_link}
-                    </a>
+                  <DropdownMenuItem onSelect={onReset} className="text-destructive">
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    <span>{translations.reset_button}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
