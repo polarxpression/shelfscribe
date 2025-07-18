@@ -1,15 +1,20 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Header from '@/components/header';
 import ShelfGrid from '@/components/shelf-grid';
 import EditCellDialog from '@/components/edit-cell-dialog';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import translations from '../translations/pt.json';
 import { useToast } from '@/hooks/use-toast';
-import Tutorial from '@/components/tutorial';
-import ResetDialog from '@/components/reset-dialog';
+
+
+import MoveModeBanner from '@/components/move-mode-banner';
 import { cn } from '@/lib/utils';
+
+import ResetDialog from '@/components/reset-dialog';
+
+import Tutorial from '@/components/tutorial';
 
 export type Notebook = {
   barcode: string;
@@ -18,8 +23,10 @@ export type Notebook = {
 
 export type ShelfData = { [key: string]: Notebook[] };
 
+
+
 export default function Home() {
-  const [shelfData, setShelfData] = useState<ShelfData>({});
+  const [shelfData, setShelfData] = useState<ShelfData>({} as ShelfData);
   const [isLoaded, setIsLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResult, setSearchResult] = useState<string | null>(null);
@@ -29,42 +36,14 @@ export default function Home() {
   const [showTutorial, setShowTutorial] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [tutorialHighlight, setTutorialHighlight] = useState<string | null>(null);
+  
+  const [isMoveMode, setIsMoveMode] = useState(false);
+  const [notebooksToMove, setNotebooksToMove] = useState<Notebook[]>([]);
+  const [sourceCellForMove, setSourceCellForMove] = useState<string | null>(null);
   const { toast } = useToast();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const tutorialSteps = [
-    {
-      title: translations.tutorial_step1_title,
-      description: translations.tutorial_step1_desc,
-      highlightId: null,
-    },
-    {
-      title: translations.tutorial_step2_title,
-      description: translations.tutorial_step2_desc,
-      highlightId: 'shelf-grid',
-    },
-    {
-      title: translations.tutorial_step3_title,
-      description: translations.tutorial_step3_desc,
-      highlightId: 'cell-1-1',
-      action: () => handleCellClick('1-1'),
-    },
-    {
-      title: translations.tutorial_step4_title,
-      description: translations.tutorial_step4_desc,
-      highlightId: 'search-bar',
-    },
-    {
-      title: translations.tutorial_step5_title,
-      description: translations.tutorial_step5_desc,
-      highlightId: 'more-options',
-    },
-    {
-      title: translations.tutorial_step6_title,
-      description: translations.tutorial_step6_desc,
-      highlightId: null,
-    }
-  ];
+  
 
   useEffect(() => {
     try {
@@ -81,7 +60,6 @@ export default function Home() {
         setShelfData(migrated);
       } else {
         setShelfData({ '1-1': [] });
-        setShowTutorial(true);
       }
     } catch (error) {
       console.error('Failed to load data from localStorage', error);
@@ -123,14 +101,18 @@ export default function Home() {
       setSearchResult(null);
       return;
     }
-    const found = Object.entries(shelfData).find(([_, notebooks]) =>
+    const found = Object.entries(shelfData).find(([, notebooks]) =>
       notebooks.some(nb => nb.barcode.toLowerCase() === trimmedQuery)
     );
     setSearchResult(found ? found[0] : null);
   }, [searchQuery, shelfData]);
 
   const handleCellClick = (cellId: string) => {
-    setSelectedCell(cellId);
+    if (isMoveMode && sourceCellForMove) {
+      handleMoveNotebook(sourceCellForMove, cellId, notebooksToMove);
+    } else {
+      setSelectedCell(cellId);
+    }
   };
 
   const handleCloseDialog = () => {
@@ -165,7 +147,20 @@ export default function Home() {
     handleCloseDialog();
   };
 
-  const handleMoveNotebooks = (sourceCellId: string, targetCellId: string, notebooksToMove: Notebook[]) => {
+  
+
+  const handleInitiateMove = (sourceCellId: string, notebooksToMove: Notebook[]) => {
+    setIsMoveMode(true);
+    setNotebooksToMove(notebooksToMove);
+    setSourceCellForMove(sourceCellId);
+    setSelectedCell(null); // Close the dialog
+    toast({
+      title: translations.move_mode_active_title,
+      description: translations.move_mode_active_description,
+    });
+  };
+
+  const handleMoveNotebook = (sourceCellId: string, targetCellId: string, notebooksToMove: Notebook[]) => {
     setShelfData(prevData => {
       const newData = { ...prevData };
       // Remove from source
@@ -177,78 +172,109 @@ export default function Home() {
       return newData;
     });
     flashUpdate(targetCellId);
-    if (shelfData[sourceCellId]?.length === notebooksToMove.length) {
-      flashUpdate(sourceCellId);
-    } else {
-      flashUpdate(sourceCellId);
-    }
+    flashUpdate(sourceCellId);
+    setIsMoveMode(false);
+    setNotebooksToMove([]);
+    setSourceCellForMove(null);
   };
 
-  const handleReset = () => {
-    setShowResetDialog(true);
-  };
-
-  const handleConfirmReset = () => {
-    setShelfData({ '1-1': [] });
-    setShowResetDialog(false);
-    toast({
-      title: translations.reset_success_title,
-      description: translations.reset_success_description,
-    });
-  };
   
-  const handleTutorialStepChange = (step: any) => {
-    setTutorialHighlight(step.highlightId || null);
-    if (step.action) {
-      step.action();
-    } else if (selectedCell && step.highlightId !== 'cell-1-1') {
-      handleCloseDialog();
-    }
+  
+  
+
+  const handleImport = (file: File, merge: boolean) => {
+    console.log('handleImport called with file:', file, 'and merge:', merge);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      console.log('FileReader onload fired.');
+      try {
+        const importedData: ShelfData = JSON.parse(event.target?.result as string);
+        console.log('Parsed imported data:', importedData);
+
+        if (!isValidShelfData(importedData)) {
+          console.error("Imported data is not valid:", importedData);
+          toast({
+            title: translations.import_error_title,
+            description: translations.import_error_invalid_data_format,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (merge) {
+          setShelfData(prevData => {
+            const newData = { ...prevData };
+            for (const cellId in importedData) {
+              if (newData[cellId]) {
+                const existingBarcodes = new Set(newData[cellId].map(nb => nb.barcode));
+                const newNotebooks = (importedData[cellId] as Notebook[]).filter((nb: Notebook) => !existingBarcodes.has(nb.barcode));
+                newData[cellId] = [...newData[cellId], ...newNotebooks];
+              } else {
+                newData[cellId] = importedData[cellId];
+              }
+            }
+            return newData;
+          });
+          toast({
+            title: translations.import_success_title,
+            description: translations.import_success_description + " (Mesclado)",
+          });
+        } else {
+          setShelfData(importedData);
+          toast({
+            title: translations.import_success_title,
+            description: translations.import_success_description + " (Substituído)",
+          });
+        }
+      } catch (error) {
+        console.error("Error parsing imported file:", error);
+        toast({
+          title: translations.import_error_title,
+          description: translations.import_error_parsing_file,
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsText(file);
   };
 
-  const handleImport = (data: ShelfData, merge: boolean) => {
-    if (typeof data !== 'object' || data === null) {
-      toast({
-        title: translations.import_error_title,
-        description: translations.import_error_invalid_json,
-        variant: "destructive",
-      });
-      return;
-    }
+  
 
-    if (merge) {
-      setShelfData(prevData => {
-        const newData = { ...prevData };
-        for (const cellId in data) {
-          if (newData[cellId]) {
-            // Merge notebooks within the same cell, avoiding duplicates
-            const existingBarcodes = new Set(newData[cellId].map(nb => nb.barcode));
-            const newNotebooks = data[cellId].filter(nb => !existingBarcodes.has(nb.barcode));
-            newData[cellId] = [...newData[cellId], ...newNotebooks];
-          } else {
-            newData[cellId] = data[cellId];
+  const isValidShelfData = (data: unknown): data is ShelfData => {
+    if (typeof data !== 'object' || data === null) {
+      return false;
+    }
+    for (const key in data) {
+      if (Object.prototype.hasOwnProperty.call(data, key)) {
+        // @ts-expect-error - The type of data is not known at this point.
+        const cellContent = data[key];
+        if (!Array.isArray(cellContent)) {
+          return false;
+        }
+        for (const item of cellContent) {
+          if (typeof item !== 'object' || item === null || !('barcode' in item)) {
+            return false;
           }
         }
-        return newData;
-      });
-      toast({
-        title: translations.import_success_title,
-        description: translations.import_success_description + " (Mesclado)",
-      });
-    } else {
-      setShelfData(data);
-      toast({
-        title: translations.import_success_title,
-        description: translations.import_success_description + " (Substituído)",
-      });
+      }
     }
+    return true;
   };
 
-  const handleImportError = (message: string) => {
+  const handleExport = () => {
+    const dataStr = JSON.stringify(shelfData, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "shelfscribe_data.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
     toast({
-      title: translations.import_error_title,
-      description: message,
-      variant: "destructive",
+      title: translations.export_success_title,
+      description: translations.export_success_description,
     });
   };
 
@@ -257,13 +283,14 @@ export default function Home() {
       <div className={`flex flex-col h-screen bg-secondary/20 text-foreground font-body`}>
         <Header 
           searchQuery={searchQuery} 
-          onSearchChange={setSearchQuery} 
+          onSearchChange={setSearchQuery}
+          onImportFile={handleImport}
           onShowTutorial={() => setShowTutorial(true)}
-          tutorialHighlight={tutorialHighlight}
-          onImport={handleImport}
-          onImportError={handleImportError}
           onReset={() => setShowResetDialog(true)}
+          onExport={handleExport}
+          tutorialHighlight={tutorialHighlight}
         />
+          
         <main className="flex-grow container mx-auto p-4 flex flex-col">
           <Card id="shelf-grid-card" className="w-full shadow-lg border-primary/20 flex-grow flex flex-col relative">
              <div id="shelf-grid" className={cn('absolute -inset-2 rounded-lg border-2 border-dashed border-transparent transition-all duration-300 pointer-events-none', {'border-primary animate-pulse-border': tutorialHighlight === 'shelf-grid'})}></div>
@@ -280,6 +307,8 @@ export default function Home() {
                   lastUpdatedCell={lastUpdatedCell}
                   lastDeletedCell={lastDeletedCell}
                   tutorialHighlight={tutorialHighlight}
+                  onMoveNotebook={handleMoveNotebook}
+                  isMoveMode={isMoveMode}
                 />
               ) : (
                 <div className="text-center p-8 flex items-center justify-center space-x-2">
@@ -298,25 +327,34 @@ export default function Home() {
             onSave={handleSave}
             onDelete={handleDelete}
     onClose={handleCloseDialog}
-    onMove={handleMoveNotebooks}
+    onInitiateMove={handleInitiateMove}
   />
         )}
+      {isMoveMode && (
+        <MoveModeBanner onCancel={() => {
+          setIsMoveMode(false);
+          setNotebooksToMove([]);
+          setSourceCellForMove(null);
+        }} />
+      )}
       <ResetDialog
         isOpen={showResetDialog}
         onClose={() => setShowResetDialog(false)}
-        onConfirm={handleConfirmReset}
+        onConfirm={() => {
+          setShelfData({ '1-1': [] });
+          setShowResetDialog(false);
+        }}
       />
-      </div>
+
       <Tutorial 
         isOpen={showTutorial} 
-        onClose={() => {
-          setShowTutorial(false);
-          setTutorialHighlight(null);
-          if (selectedCell) handleCloseDialog();
-        }} 
-        steps={tutorialSteps}
-        onStepChange={handleTutorialStepChange}
+        onClose={() => setShowTutorial(false)} 
+        setHighlight={setTutorialHighlight}
+        onOpenCell={useCallback((cellId) => setSelectedCell(cellId), [])}
+        onCloseCell={() => setSelectedCell(null)}
       />
+
+      </div>
     </>
   );
 }

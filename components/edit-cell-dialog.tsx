@@ -2,19 +2,11 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Barcode, Trash2, Move } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
-import MoveNotebooksDialog from './move-notebooks-dialog';
 import translations from '../translations/pt.json';
 
 type Notebook = {
@@ -29,7 +21,7 @@ type EditCellDialogProps = {
   onSave: (cellId: string, notebooks: Notebook[]) => void;
   onDelete: (cellId: string) => void;
   onClose: () => void;
-  onMove: (sourceCellId: string, targetCellId: string, notebooksToMove: Notebook[]) => void;
+  onInitiateMove: (sourceCellId: string, notebooksToMove: Notebook[]) => void;
 };
 
 export default function EditCellDialog({
@@ -39,11 +31,10 @@ export default function EditCellDialog({
   onSave,
   onDelete,
   onClose,
-  onMove
-}: EditCellDialogProps) => {
+  onInitiateMove,
+}: EditCellDialogProps) {
   const [notebooks, setNotebooks] = useState<Notebook[]>(currentNotebooks);
   const [selectedNotebooks, setSelectedNotebooks] = useState<Set<string>>(new Set());
-  const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
 
   const [col, row] = cellId.split('-');
 
@@ -87,41 +78,45 @@ export default function EditCellDialog({
   };
 
   const handleMoveRequest = () => {
-    setIsMoveDialogOpen(true);
-  };
-
-  const handleConfirmMove = (targetCellId: string) => {
     const notebooksToMove = notebooks.filter(nb => selectedNotebooks.has(nb.barcode));
-    const remainingNotebooks = notebooks.filter(nb => !selectedNotebooks.has(nb.barcode));
-    onMove(cellId, targetCellId, notebooksToMove);
-    setNotebooks(remainingNotebooks);
-    setSelectedNotebooks(new Set());
-    setIsMoveDialogOpen(false);
+    onInitiateMove(cellId, notebooksToMove);
+    onClose();
   };
 
   const hasEmptyBarcode = notebooks.some(nb => !nb.barcode || nb.barcode.trim() === '');
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[425px] bg-background">
+      <DialogContent className="sm:max-w-lg bg-background">
         <DialogHeader>
           <DialogTitle className="text-primary">{translations.edit_slot_title.replace('{col}', col).replace('{row}', row)}</DialogTitle>
           <DialogDescription>
-            {translations.edit_slot_description}
+            {translations.edit_slot_description_draggable}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           {notebooks.map((nb, idx) => {
             const isEmpty = !nb.barcode || nb.barcode.trim() === '';
             return (
-              <div className="relative flex items-center gap-2" key={idx}>
+              <div
+                className="relative flex items-center gap-2"
+                key={idx}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData('text/plain', JSON.stringify({
+                    sourceCellId: cellId,
+                    notebook: nb,
+                  }));
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+              >
                 <Checkbox
                   id={`select-nb-${idx}`}
                   checked={selectedNotebooks.has(nb.barcode)}
                   onCheckedChange={() => handleToggleSelect(nb.barcode)}
                   className="mr-2"
                 />
-                <Label htmlFor={`barcode-${idx}`} className="absolute -top-2 left-10 inline-block bg-background px-1 text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <Label htmlFor={`barcode-${idx}`} className="absolute -top-2 left-10 bg-background px-1 text-xs font-medium text-muted-foreground flex items-center gap-1">
                   {translations.barcode_label} #{idx + 1}
                   <span className={`transition-all ${isEmpty ? 'text-destructive font-normal' : 'hidden'}`}>({translations.required || 'required'})</span>
                 </Label>
@@ -145,28 +140,32 @@ export default function EditCellDialog({
             + {translations.add_notebook || 'Add Notebook'}
           </Button>
         </div>
-        <DialogFooter className="sm:justify-between gap-2">
-          <div>
-            <Button type="button" variant="outline" onClick={handleMoveRequest} disabled={selectedNotebooks.size === 0}>
-              <Move className="mr-2 h-4 w-4" />
-              {translations.move_button}
+        <DialogFooter className="flex flex-wrap justify-end gap-2">
+          <div className={`transition-all duration-300 ease-in-out ${selectedNotebooks.size > 0 ? 'opacity-100 max-h-40' : 'opacity-0 max-h-0 overflow-hidden'}`}>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button type="button" variant="outline" onClick={handleMoveRequest} disabled={selectedNotebooks.size === 0}>
+                <Move className="mr-2 h-4 w-4" />
+                {translations.move_button}
+              </Button>
+              <Button type="button" variant="destructive" onClick={handleDeleteSelected} disabled={selectedNotebooks.size === 0}>
+                <Trash2 className="mr-2 h-4 w-4" />
+                {translations.delete_selected_button}
+              </Button>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <DialogClose asChild>
+              <Button type="button" variant="outline">{translations.close_button}</Button>
+            </DialogClose>
+            <Button type="button" onClick={handleSave} disabled={hasEmptyBarcode}>
+              {translations.save_changes_button}
             </Button>
-            <Button type="button" variant="destructive" onClick={handleDeleteSelected} disabled={selectedNotebooks.size === 0} className="ml-2">
-              <Trash2 className="mr-2 h-4 w-4" />
-              {translations.delete_selected_button}
+            <Button type="button" variant="destructive" onClick={handleDelete}>
+              {translations.delete_entry_button}
             </Button>
           </div>
-          <Button type="button" onClick={handleSave} disabled={hasEmptyBarcode}>
-            {translations.save_changes_button}
-          </Button>
         </DialogFooter>
       </DialogContent>
-      <MoveNotebooksDialog
-        isOpen={isMoveDialogOpen}
-        onClose={() => setIsMoveDialogOpen(false)}
-        onMove={handleConfirmMove}
-        currentCellId={cellId}
-      />
-    </Dialog>
+      </Dialog>
   );
 }

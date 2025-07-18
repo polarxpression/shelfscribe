@@ -15,7 +15,8 @@ export type ShelfGridProps = {
   lastUpdatedCell: string | null;
   lastDeletedCell: string | null;
   tutorialHighlight: string | null;
-  onImport: (data: any, merge: boolean) => void;
+  onMoveNotebook: (sourceCellId: string, targetCellId: string, notebooks: Notebook[]) => void;
+  isMoveMode: boolean;
 };
 
 export default function ShelfGrid({
@@ -24,7 +25,9 @@ export default function ShelfGrid({
   searchResult,
   lastUpdatedCell,
   lastDeletedCell,
-  tutorialHighlight
+  tutorialHighlight,
+  onMoveNotebook,
+  isMoveMode,
 }: ShelfGridProps) {
   const [renderedCells, setRenderedCells] = useState<Set<string>>(new Set());
 
@@ -97,6 +100,12 @@ export default function ShelfGrid({
                         onClick={() => onCellClick(cellId)}
                         variant="outline"
                         size="icon"
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          const { sourceCellId, notebook } = JSON.parse(e.dataTransfer.getData('text/plain'));
+                          onMoveNotebook(sourceCellId, cellId, [notebook]);
+                        }}
                         className={cn(
                           "h-16 w-16 flex-col items-center justify-center p-3 transition-all duration-300 ease-in-out relative shadow-inner",
                           "hover:bg-primary/10 hover:border-primary/80",
@@ -105,7 +114,8 @@ export default function ShelfGrid({
                           isLastUpdated && 'animate-flash',
                           isTutorialHighlight && 'ring-2 ring-offset-2 ring-offset-background ring-primary animate-pulse',
                           isNew && 'animate-cell-appear',
-                          isDisappearing && 'animate-cell-disappear'
+                          isDisappearing && 'animate-cell-disappear',
+                          isMoveMode && 'border-2 border-blue-500', // Highlight cells in move mode
                         )}
                       >
                         <div className="flex flex-wrap items-center justify-center w-full h-full gap-0.5 overflow-hidden">
