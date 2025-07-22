@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
 import { Input } from '@/components/ui/input';
@@ -35,6 +35,13 @@ export default function EditCellDialog({
 }: EditCellDialogProps) {
   const [notebooks, setNotebooks] = useState<Notebook[]>(currentNotebooks);
   const [selectedNotebooks, setSelectedNotebooks] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (notebooks.length > 0) {
+      const lastInput = document.getElementById(`barcode-${notebooks.length - 1}`);
+      lastInput?.focus();
+    }
+  }, [notebooks.length]);
 
   const [col, row] = cellId.split('-');
 
@@ -86,7 +93,12 @@ export default function EditCellDialog({
   const hasEmptyBarcode = notebooks.some(nb => !nb.barcode || nb.barcode.trim() === '');
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) {
+        handleSave();
+        onClose();
+      }
+    }}>
       <DialogContent className="sm:max-w-lg bg-background">
         <DialogHeader>
           <DialogTitle className="text-primary">{translations.edit_slot_title.replace('{col}', col).replace('{row}', row)}</DialogTitle>
@@ -125,9 +137,14 @@ export default function EditCellDialog({
                   id={`barcode-${idx}`}
                   value={nb.barcode}
                   onChange={e => handleNotebookChange(idx, e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddNotebook();
+                    }
+                  }}
                   className={`col-span-3 pl-10 transition-all duration-200 ${isEmpty ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   placeholder={translations.barcode_placeholder}
-                  autoFocus={idx === 0}
                   required
                 />
                 <Button type="button" variant="ghost" onClick={() => handleRemoveNotebook(idx)}>
