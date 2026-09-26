@@ -63,7 +63,7 @@
   "import_error_parsing_file": "Falha ao analisar o arquivo importado. Verifique se é um JSON válido.",
   "reset_button": "Resetar",
   "reset_dialog_title": "Você tem certeza?",
-  "reset_dialog_description": "Esta ação não pode ser desfeita. Todos os seus dados de prateleira serão permanentemente apagados.",
+  "reset_dialog_description": "Esta ação não pode ser desfeita. Todos os dados deste layout serão permanentemente apagados.",
   "confirm_reset_button": "Sim, resetar",
   "reset_success_title": "Prateleira Resetada",
   "reset_success_description": "Sua prateleira foi resetada para o estado inicial.",
@@ -85,5 +85,17 @@
   "move_mode_active_title": "Modo de Movimentação Ativo",
   "move_mode_active_description": "Clique em um slot vazio para mover o caderno selecionado para lá, ou clique em um slot ocupado para mesclar.",
   "export_success_title": "Exportação bem-sucedida",
-  "export_success_description": "Os dados da prateleira foram exportados com sucesso."
+  "export_success_description": "Os dados da prateleira foram exportados com sucesso.",
+  "select_layout_placeholder": "Selecionar layout",
+  "new_layout_button": "Novo layout",
+  "rename_layout_button": "Renomear layout",
+  "delete_layout_button": "Excluir layout",
+  "new_layout_prompt": "Nome do novo layout:",
+  "new_layout_default_name": "Estante",
+  "rename_layout_prompt": "Novo nome do layout:",
+  "delete_layout_confirm": "Excluir o layout \"{name}\"? Os dados deste layout serão apagados.",
+  "layout_created_title": "Layout criado",
+  "layout_renamed_title": "Layout renomeado",
+  "layout_deleted_title": "Layout excluído",
+  "active_layout_label": "Layout ativo"
 }
