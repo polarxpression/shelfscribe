@@ -43,7 +43,20 @@ export default function EditCellDialog({
     }
   }, [notebooks.length]);
 
-  const [col, row] = cellId.split('-');
+  const [col, row] = cellId.split('-').map(Number);
+
+  const columnLabel = (column: number) => {
+    let value = column;
+    let label = '';
+    while (value > 0) {
+      const remainder = (value - 1) % 26;
+      label = String.fromCharCode(65 + remainder) + label;
+      value = Math.floor((value - 1) / 26);
+    }
+    return label;
+  };
+
+  const cellName = `${columnLabel(col)}${row}`;
 
   const handleSave = () => {
     const filtered = notebooks.filter(nb => nb.barcode && nb.barcode.trim() !== '');
@@ -99,85 +112,103 @@ export default function EditCellDialog({
         onClose();
       }
     }}>
-      <DialogContent className="sm:max-w-lg bg-background">
-        <DialogHeader>
-          <DialogTitle className="text-primary">{translations.edit_slot_title.replace('{col}', col).replace('{row}', row)}</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="flex h-auto max-h-[92dvh] w-[calc(100%-0.75rem)] flex-col gap-0 overflow-hidden rounded-t-2xl rounded-b-none p-0 pb-[env(safe-area-inset-bottom)] bottom-0 top-auto translate-y-0 sm:bottom-auto sm:top-1/2 sm:h-auto sm:max-h-[90vh] sm:max-w-lg sm:-translate-y-1/2 sm:rounded-lg sm:p-6 sm:pb-6">
+        <DialogHeader className="shrink-0 border-b px-4 pb-3 pt-4 pr-12 sm:border-b-0 sm:px-0 sm:pb-1 sm:pt-0 sm:pr-8">
+          <DialogTitle className="flex items-center gap-2 text-left text-primary">
+            <span>{translations.edit_slot_title}</span>
+            <span className="inline-flex shrink-0 items-center rounded-md bg-primary px-2 py-1 text-sm font-extrabold leading-none tracking-wide text-primary-foreground shadow-sm ring-1 ring-primary/30">
+              {cellName}
+            </span>
+          </DialogTitle>
+          <DialogDescription className="text-left text-xs leading-relaxed sm:text-sm">
             {translations.edit_slot_description_draggable}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          {notebooks.map((nb, idx) => {
-            const isEmpty = !nb.barcode || nb.barcode.trim() === '';
-            return (
-              <div
-                className="relative flex items-center gap-2"
-                key={idx}
-                draggable
-                onDragStart={(e) => {
-                  e.dataTransfer.setData('text/plain', JSON.stringify({
-                    sourceCellId: cellId,
-                    notebook: nb,
-                  }));
-                  e.dataTransfer.effectAllowed = 'move';
-                }}
-              >
-                <Checkbox
-                  id={`select-nb-${idx}`}
-                  checked={selectedNotebooks.has(nb.barcode)}
-                  onCheckedChange={() => handleToggleSelect(nb.barcode)}
-                  className="mr-2"
-                />
-                <Label htmlFor={`barcode-${idx}`} className="absolute -top-2 left-10 bg-background px-1 text-xs font-medium text-muted-foreground flex items-center gap-1">
-                  {translations.barcode_label} #{idx + 1}
-                  <span className={`transition-all ${isEmpty ? 'text-destructive font-normal' : 'hidden'}`}>({translations.required || 'required'})</span>
-                </Label>
-                <Barcode className="absolute left-11 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  id={`barcode-${idx}`}
-                  value={nb.barcode}
-                  onChange={e => handleNotebookChange(idx, e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddNotebook();
-                    }
+
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-0 sm:py-4">
+          <div className="grid gap-4">
+            {notebooks.map((nb, idx) => {
+              const isEmpty = !nb.barcode || nb.barcode.trim() === '';
+              return (
+                <div
+                  className="grid grid-cols-[auto,minmax(0,1fr),auto] items-center gap-2 rounded-lg border bg-muted/20 p-2 sm:border-0 sm:bg-transparent sm:p-0"
+                  key={idx}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('text/plain', JSON.stringify({
+                      sourceCellId: cellId,
+                      notebook: nb,
+                    }));
+                    e.dataTransfer.effectAllowed = 'move';
                   }}
-                  className={`col-span-3 pl-10 transition-all duration-200 ${isEmpty ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                  placeholder={translations.barcode_placeholder}
-                  required
-                />
-                <Button type="button" variant="ghost" onClick={() => handleRemoveNotebook(idx)}>
-                  <Trash2/>
-                </Button>
-              </div>
-            );
-          })}
-          <Button type="button" variant="secondary" onClick={handleAddNotebook}>
-            + {translations.add_notebook || 'Add Notebook'}
-          </Button>
+                >
+                  <Checkbox
+                    id={`select-nb-${idx}`}
+                    checked={selectedNotebooks.has(nb.barcode)}
+                    onCheckedChange={() => handleToggleSelect(nb.barcode)}
+                    aria-label={`${translations.barcode_label} #${idx + 1}`}
+                  />
+                  <div className="relative min-w-0">
+                    <Label htmlFor={`barcode-${idx}`} className="absolute -top-2 left-2 z-10 bg-background px-1 text-[11px] font-medium text-muted-foreground">
+                      {translations.barcode_label} #{idx + 1}
+                    </Label>
+                    <Barcode className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      id={`barcode-${idx}`}
+                      value={nb.barcode}
+                      onChange={e => handleNotebookChange(idx, e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddNotebook();
+                        }
+                      }}
+                      className={`h-11 w-full pl-10 transition-all duration-200 ${isEmpty ? 'border-destructive focus-visible:ring-destructive' : ''}`}
+                      placeholder={translations.barcode_placeholder}
+                      aria-invalid={isEmpty}
+                      required
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveNotebook(idx)}
+                    aria-label={`${translations.delete_entry_button} #${idx + 1}`}
+                    className="h-11 w-11 shrink-0 text-muted-foreground hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              );
+            })}
+            <Button type="button" variant="secondary" onClick={handleAddNotebook} className="h-11 w-full">
+              + {translations.add_notebook || 'Add Notebook'}
+            </Button>
+          </div>
         </div>
-        <DialogFooter className="flex flex-wrap justify-end gap-2">
-          <div className={`transition-all duration-300 ease-in-out ${selectedNotebooks.size > 0 ? 'opacity-100 max-h-40' : 'opacity-0 max-h-0 overflow-hidden'}`}>
-            <div className="flex items-center gap-2 flex-wrap">
-              <Button type="button" variant="outline" onClick={handleMoveRequest} disabled={selectedNotebooks.size === 0}>
+
+        <DialogFooter className="shrink-0 gap-3 border-t bg-background/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:gap-2 sm:border-t-0 sm:bg-transparent sm:p-0 sm:pt-2 sm:backdrop-blur-none">
+          <div className={`w-full transition-all duration-300 ease-in-out ${selectedNotebooks.size > 0 ? 'max-h-40 opacity-100' : 'max-h-0 overflow-hidden opacity-0'}`}>
+            <div className="grid grid-cols-2 gap-2 pb-1">
+              <Button type="button" variant="outline" onClick={handleMoveRequest} disabled={selectedNotebooks.size === 0} className="w-full">
                 <Move className="mr-2 h-4 w-4" />
                 {translations.move_button}
               </Button>
-              <Button type="button" variant="destructive" onClick={handleDeleteSelected} disabled={selectedNotebooks.size === 0}>
+              <Button type="button" variant="destructive" onClick={handleDeleteSelected} disabled={selectedNotebooks.size === 0} className="w-full">
                 <Trash2 className="mr-2 h-4 w-4" />
                 {translations.delete_selected_button}
               </Button>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="grid w-full grid-cols-1 gap-2 sm:flex sm:w-auto">
             <DialogClose asChild>
-              <Button type="button" variant="outline">{translations.close_button}</Button>
+              <Button type="button" variant="outline" className="w-full sm:w-auto">{translations.close_button}</Button>
             </DialogClose>
-            <Button type="button" onClick={handleSave} disabled={hasEmptyBarcode}>
+            <Button type="button" onClick={handleSave} disabled={hasEmptyBarcode} className="w-full sm:w-auto">
               {translations.save_changes_button}
             </Button>
-            <Button type="button" variant="destructive" onClick={handleDelete}>
+            <Button type="button" variant="destructive" onClick={handleDelete} className="w-full sm:w-auto">
               {translations.delete_entry_button}
             </Button>
           </div>

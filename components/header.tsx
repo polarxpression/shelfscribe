@@ -29,12 +29,12 @@ export default function Header({
 }: HeaderProps) {
 
   return (
-    <header className="flex items-center justify-between p-4 bg-background border-b">
-      <div className="flex items-center gap-4">
-        <BookMarked className="h-8 w-8 stroke-primary" />
-        <h1 className="text-2xl font-bold text-primary">{translations.my_notebook_shelf_title}</h1>
+    <header className="sticky top-0 z-20 flex flex-wrap items-center gap-3 bg-background/95 p-3 backdrop-blur sm:justify-between sm:p-4">
+      <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+        <BookMarked className="h-7 w-7 shrink-0 stroke-primary sm:h-8 sm:w-8" />
+        <h1 className="truncate text-lg font-bold text-primary sm:text-2xl">{translations.my_notebook_shelf_title}</h1>
       </div>
-      <div className={cn('flex-1 max-w-md', tutorialHighlight === 'search-bar' ? 'tutorial-highlight' : '')}>
+      <div className={cn('order-3 w-full sm:order-none sm:flex-1 sm:max-w-md sm:mx-4', tutorialHighlight === 'search-bar' ? 'tutorial-highlight' : '')}>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
@@ -46,9 +46,9 @@ export default function Header({
           />
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
         <ModeToggle />
-        <div className={cn('flex-1 max-w-md', tutorialHighlight === 'more-options' ? 'tutorial-highlight' : '')}>
+        <div className={cn(tutorialHighlight === 'more-options' ? 'tutorial-highlight' : '')}>
           <SettingsDialog onShowTutorial={onShowTutorial} onReset={onReset} onExport={onExport} onImportFile={onImportFile} />
         </div>
       </div>

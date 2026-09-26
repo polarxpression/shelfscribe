@@ -8,6 +8,17 @@ import type { Notebook, ShelfData } from '@/app/page';
 import translations from '../translations/pt.json';
 import { useEffect, useState } from 'react';
 
+const columnLabel = (column: number) => {
+  let value = column;
+  let label = '';
+  while (value > 0) {
+    const remainder = (value - 1) % 26;
+    label = String.fromCharCode(65 + remainder) + label;
+    value = Math.floor((value - 1) / 26);
+  }
+  return label;
+};
+
 export type ShelfGridProps = {
   shelfData: ShelfData;
   onCellClick: (cellId: string) => void;
@@ -53,11 +64,11 @@ export default function ShelfGrid({
       for (let r = 1; r <= gridRows; r++) {
         const cellId = `${c}-${r}`;
         const hasContent = shelfData[cellId] && shelfData[cellId].length > 0;
-        const isAdjacent = 
-          (shelfData[`${c-1}-${r}`] && shelfData[`${c-1}-${r}`].length > 0) ||
-          (shelfData[`${c+1}-${r}`] && shelfData[`${c+1}-${r}`].length > 0) ||
-          (shelfData[`${c}-${r-1}`] && shelfData[`${c}-${r-1}`].length > 0) ||
-          (shelfData[`${c}-${r+1}`] && shelfData[`${c}-${r+1}`].length > 0);
+        const isAdjacent =
+          (shelfData[`${c - 1}-${r}`] && shelfData[`${c - 1}-${r}`].length > 0) ||
+          (shelfData[`${c + 1}-${r}`] && shelfData[`${c + 1}-${r}`].length > 0) ||
+          (shelfData[`${c}-${r - 1}`] && shelfData[`${c}-${r - 1}`].length > 0) ||
+          (shelfData[`${c}-${r + 1}`] && shelfData[`${c}-${r + 1}`].length > 0);
 
         if (hasContent || isAdjacent || (c === 1 && r === 1)) {
           newCells.add(cellId);
@@ -69,20 +80,20 @@ export default function ShelfGrid({
 
   return (
     <TooltipProvider delayDuration={100}>
-      <div className="w-full flex justify-center">
-        <div 
-          className="grid gap-1.5"
+      <div className="w-full min-w-max flex justify-center">
+        <div
+          className="grid gap-1 sm:gap-1.5 min-w-max"
           style={{
             gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
             transition: 'grid-template-columns 0.5s ease-in-out',
           }}
         >
           {Array.from({ length: gridCols }, (_, i) => i + 1).map(col => (
-            <div key={`col-content-${col}`} className="flex flex-col gap-1.5">
+            <div key={`col-content-${col}`} className="flex flex-col gap-1 sm:gap-1.5">
               {Array.from({ length: gridRows }, (_, i) => i + 1).map(row => {
                 const cellId = `${col}-${row}`;
                 if (!renderedCells.has(cellId) && lastDeletedCell !== cellId) {
-                  return <div key={cellId} className="h-16 w-16" />;
+                  return <div key={cellId} className="h-14 w-14 sm:h-16 sm:w-16" />;
                 }
 
                 const notebooks = shelfData[cellId] || [];
@@ -91,6 +102,7 @@ export default function ShelfGrid({
                 const isTutorialHighlight = tutorialHighlight === `cell-${cellId}`;
                 const isNew = !occupiedCells.includes(cellId) && renderedCells.has(cellId);
                 const isDisappearing = cellId === lastDeletedCell;
+                const cellName = `${columnLabel(col)}${row}`;
 
                 return (
                   <Tooltip key={cellId}>
@@ -103,37 +115,50 @@ export default function ShelfGrid({
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => {
                           e.preventDefault();
-                          const { sourceCellId, notebook } = JSON.parse(e.dataTransfer.getData('text/plain'));
-                          onMoveNotebook(sourceCellId, cellId, [notebook]);
+                          try {
+                            const { sourceCellId, notebook } = JSON.parse(e.dataTransfer.getData('text/plain'));
+                            if (sourceCellId && notebook) {
+                              onMoveNotebook(sourceCellId, cellId, [notebook]);
+                            }
+                          } catch {
+                            // Ignore malformed drag data.
+                          }
                         }}
+                        aria-label={`${cellName}${notebooks.length > 0 ? `, ${notebooks.length} ${notebooks.length === 1 ? 'caderno' : 'cadernos'}` : ', vazio'}`}
                         className={cn(
-                          "h-16 w-16 flex-col items-center justify-center p-3 transition-all duration-300 ease-in-out relative shadow-inner",
-                          "hover:bg-primary/10 hover:border-primary/80",
-                          notebooks.length > 0 ? 'bg-primary/10 border-primary/30 text-primary' : 'border-dashed border-border/80 text-muted-foreground hover:text-primary',
+                          'h-14 w-14 sm:h-16 sm:w-16 flex-col items-center justify-center p-1.5 sm:p-2 transition-all duration-300 ease-in-out relative shadow-inner touch-manipulation',
+                          'hover:bg-primary/10 hover:border-primary/80',
+                          notebooks.length > 0
+                            ? 'bg-primary/10 border-primary/30 text-primary'
+                            : 'border-dashed border-border/80 text-muted-foreground hover:text-primary',
                           isSearchResult && 'ring-2 ring-offset-2 ring-offset-background ring-accent animate-pulse',
                           isLastUpdated && 'animate-flash',
                           isTutorialHighlight && 'ring-2 ring-offset-2 ring-offset-background ring-primary animate-pulse',
                           isNew && 'animate-cell-appear',
                           isDisappearing && 'animate-cell-disappear',
-                          isMoveMode && 'border-2 border-blue-500', // Highlight cells in move mode
+                          isMoveMode && 'border-2 border-blue-500',
                         )}
                       >
-                        <div className="flex flex-wrap items-center justify-center w-full h-full gap-0.5 overflow-hidden">
+                        <span
+                          aria-hidden="true"
+                          className="absolute left-1 top-1 z-10 rounded-md bg-primary px-1.5 py-0.5 text-[11px] font-extrabold leading-none tracking-wide text-primary-foreground shadow-sm ring-1 ring-primary/30 sm:left-1.5 sm:top-1.5 sm:px-2 sm:py-1 sm:text-xs"
+                        >
+                          {cellName}
+                        </span>
+                        <div className="flex flex-wrap items-center justify-center w-full h-full gap-0.5 overflow-hidden pt-3 sm:pt-4">
                           {notebooks.length > 0 ? (
                             notebooks.slice(0, 4).map((nb, idx) => (
-                              <Book key={idx} className="h-3 w-3 min-w-0 min-h-0 flex-shrink-0 object-contain" style={{ maxWidth: '1rem', maxHeight: '1rem' }} />
+                              <Book key={idx} className="h-3 w-3 min-w-0 min-h-0 flex-shrink-0 object-contain sm:h-3.5 sm:w-3.5" />
                             ))
                           ) : (
-                            <Plus className="h-5 w-5" />
+                            <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
                           )}
                         </div>
-                        <span className="sr-only">Slot C{col}-L{row}</span>
+                        <span className="sr-only">{cellName}</span>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent className="bg-background border-border shadow-lg">
-                      <p className="font-semibold text-sm">
-                        Slot: C{col}, L{row}
-                      </p>
+                      <p className="font-semibold text-sm">{cellName}</p>
                       {notebooks.length > 0 ? (
                         <ul className="text-muted-foreground font-mono text-xs">
                           {notebooks.map((nb, idx) => (

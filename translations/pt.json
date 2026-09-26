@@ -26,7 +26,7 @@
   "import_json_button": "Importar JSON",
   "view_faq_button": "Ver FAQ",
   "github_link": "GitHub",
-  "edit_slot_title": "Editar célula {cell}",
+  "edit_slot_title": "Editar célula",
   "edit_slot_description": "Insira o código de barras do caderno abaixo. Você também pode excluir a entrada para este slot.",
   "barcode_label": "Código de Barras",
   "barcode_placeholder": "ex: 9780321765723",

@@ -92,3 +92,19 @@
   box-shadow: 0 0 0 4px hsl(var(--primary));
   transition: box-shadow 0.3s ease-in-out;
 }
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100dvh;
+  }
+}
+
+@media (max-width: 640px) {
+  button, input, [role="button"] {
+    min-height: 44px;
+  }
+}
