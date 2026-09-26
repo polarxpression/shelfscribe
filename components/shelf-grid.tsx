@@ -82,7 +82,7 @@ export default function ShelfGrid({
     <TooltipProvider delayDuration={100}>
       <div className="w-full min-w-max flex justify-center">
         <div
-          className="grid gap-1 sm:gap-1.5 min-w-max"
+          className="grid gap-2 sm:gap-2.5 min-w-max"
           style={{
             gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))`,
             transition: 'grid-template-columns 0.5s ease-in-out',
@@ -93,7 +93,7 @@ export default function ShelfGrid({
               {Array.from({ length: gridRows }, (_, i) => i + 1).map(row => {
                 const cellId = `${col}-${row}`;
                 if (!renderedCells.has(cellId) && lastDeletedCell !== cellId) {
-                  return <div key={cellId} className="h-14 w-14 sm:h-16 sm:w-16" />;
+                  return <div key={cellId} className="h-20 w-20 sm:h-24 sm:w-24" />;
                 }
 
                 const notebooks = shelfData[cellId] || [];
@@ -126,7 +126,7 @@ export default function ShelfGrid({
                         }}
                         aria-label={`${cellName}${notebooks.length > 0 ? `, ${notebooks.length} ${notebooks.length === 1 ? 'caderno' : 'cadernos'}` : ', vazio'}`}
                         className={cn(
-                          'h-14 w-14 sm:h-16 sm:w-16 flex-col items-center justify-center p-1.5 sm:p-2 transition-all duration-300 ease-in-out relative shadow-inner touch-manipulation',
+                          'h-20 w-20 sm:h-24 sm:w-24 flex-col items-center justify-center p-1.5 sm:p-2 transition-all duration-300 ease-in-out relative shadow-inner touch-manipulation',
                           'hover:bg-primary/10 hover:border-primary/80',
                           notebooks.length > 0
                             ? 'bg-primary/10 border-primary/30 text-primary'
@@ -141,17 +141,17 @@ export default function ShelfGrid({
                       >
                         <span
                           aria-hidden="true"
-                          className="absolute left-1 top-1 z-10 rounded-md bg-primary px-1.5 py-0.5 text-[11px] font-extrabold leading-none tracking-wide text-primary-foreground shadow-sm ring-1 ring-primary/30 sm:left-1.5 sm:top-1.5 sm:px-2 sm:py-1 sm:text-xs"
+                          className="absolute left-1 top-1 z-10 rounded-md bg-primary px-2 py-1 text-sm font-extrabold leading-none tracking-wide text-primary-foreground shadow-sm ring-1 ring-primary/30 sm:left-1.5 sm:top-1.5 sm:px-2.5 sm:py-1.5 sm:text-base"
                         >
                           {cellName}
                         </span>
-                        <div className="flex flex-wrap items-center justify-center w-full h-full gap-0.5 overflow-hidden pt-3 sm:pt-4">
+                        <div className="flex flex-wrap items-center justify-center w-full h-full gap-1 overflow-hidden pt-5 sm:pt-6">
                           {notebooks.length > 0 ? (
                             notebooks.slice(0, 4).map((nb, idx) => (
-                              <Book key={idx} className="h-3 w-3 min-w-0 min-h-0 flex-shrink-0 object-contain sm:h-3.5 sm:w-3.5" />
+                              <Book key={idx} className="h-4 w-4 min-w-0 min-h-0 flex-shrink-0 object-contain sm:h-5 sm:w-5" />
                             ))
                           ) : (
-                            <Plus className="h-4 w-4 sm:h-5 sm:w-5" />
+                            <Plus className="h-6 w-6 sm:h-7 sm:w-7" />
                           )}
                         </div>
                         <span className="sr-only">{cellName}</span>
