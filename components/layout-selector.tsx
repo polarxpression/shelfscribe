@@ -34,9 +34,9 @@ export default function LayoutSelector({
   onDeleteLayout,
 }: LayoutSelectorProps) {
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
       <Select value={activeLayoutId} onValueChange={onLayoutChange}>
-        <SelectTrigger className="w-[220px] bg-background">
+        <SelectTrigger className="w-full bg-background sm:w-[220px]">
           <SelectValue placeholder={translations.select_layout_placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -48,21 +48,36 @@ export default function LayoutSelector({
         </SelectContent>
       </Select>
 
-      <Button variant="outline" size="icon" onClick={onCreateLayout} aria-label={translations.new_layout_button}>
-        <Plus className="h-4 w-4" />
-      </Button>
-      <Button variant="outline" size="icon" onClick={onRenameLayout} aria-label={translations.rename_layout_button}>
-        <Pencil className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={onDeleteLayout}
-        disabled={layouts.length <= 1}
-        aria-label={translations.delete_layout_button}
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={onCreateLayout}
+          aria-label={translations.new_layout_button}
+          className="h-10 w-10 shrink-0"
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={onRenameLayout}
+          aria-label={translations.rename_layout_button}
+          className="h-10 w-10 shrink-0"
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={onDeleteLayout}
+          disabled={layouts.length <= 1}
+          aria-label={translations.delete_layout_button}
+          className="h-10 w-10 shrink-0"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 }

@@ -450,7 +450,7 @@ export default function Home() {
 
   return (
     <>
-      <div className={`flex flex-col h-screen bg-secondary/20 text-foreground font-body`}>
+      <div className={`flex flex-col h-dvh min-h-dvh bg-secondary/20 text-foreground font-body`}>
         <Header 
           searchQuery={searchQuery} 
           onSearchChange={setSearchQuery}
@@ -461,10 +461,10 @@ export default function Home() {
           tutorialHighlight={tutorialHighlight}
         />
           
-        <main className="flex-grow container mx-auto p-4 flex flex-col">
+        <main className="flex-grow container mx-auto w-full p-2 sm:p-4 flex flex-col">
           <Card id="shelf-grid-card" className="w-full shadow-lg border-primary/20 flex-grow flex flex-col relative">
              <div id="shelf-grid" className={cn('absolute -inset-2 rounded-lg border-2 border-dashed border-transparent transition-all duration-300 pointer-events-none', {'border-primary animate-pulse-border': tutorialHighlight === 'shelf-grid'})}></div>
-            <CardHeader className="gap-4">
+            <CardHeader className="gap-3 p-3 sm:gap-4 sm:p-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <CardTitle className="pointer-events-none select-none text-xl font-bold tracking-tight text-primary">{translations.my_notebook_shelf_title}</CardTitle>
@@ -485,7 +485,7 @@ export default function Home() {
                 <div className="text-xs text-muted-foreground">{translations.active_layout_label}: <span className="font-medium text-foreground">{activeLayout.name}</span></div>
               )}
             </CardHeader>
-            <CardContent ref={scrollContainerRef} className="flex-grow flex items-center justify-center overflow-auto p-4">
+            <CardContent ref={scrollContainerRef} className="flex-grow flex items-start justify-start sm:items-center sm:justify-center overflow-auto overscroll-contain p-2 sm:p-4">
               {isLoaded ? (
                 <ShelfGrid
                   shelfData={shelfData}
